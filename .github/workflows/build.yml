@@ -1,5 +1,20 @@
 name: build
-on: push
+on:
+  workflow_dispatch:
+    inputs:
+      nodeVersion:
+        description: Node.js version
+        required: true
+      imageType:
+        description: Desired image type
+        required: true
+        default: vanilla
+        type: choice
+        options:
+          - asan
+          - asan-debug
+          - debug
+          - vanilla
 
 permissions:
   contents: read
@@ -7,7 +22,44 @@ permissions:
 jobs:
   test-build:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
     steps:
+      - name: Compute build args
+        id: args
+        run: |
+          case ${{ inputs.imageType }} in
+            asan)
+              config_flags='--enable-asan'
+              ;;
+            asan-debug)
+              config_flags='--debug --enable-asan'
+              ;;
+            debug)
+              config_flags='--debug'
+              ;;
+            vanilla)
+              config_flags=''
+              ;;
+            *)
+              echo "Unknown image type ${{ inputs.imageType }}" >&2
+              exit 1
+              ;;
+          esac
+          echo "configFlags=${config_flags}" >> "$GITHUB_OUTPUT"
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
-          build-args: NODE_VERSION=18.20.4
+          build-args: |
+            NODE_VERSION=${{ inputs.nodeVersion }}
+            CONFIG_FLAGS=${{ steps.args.outputs.configFlags }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}-${{ inputs.imageType }}-test
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}

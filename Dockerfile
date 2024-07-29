@@ -15,10 +15,18 @@ RUN curl -fsSL -o /tmp/node.tar.xz "https://nodejs.org/download/release/v${NODE_
     rm /tmp/node.tar.xz
 
 FROM source as build
-RUN CC=clang CXX=clang++ ./configure --ninja --debug --enable-asan && \
+ARG CONFIG_FLAGS
+RUN CC=clang CXX=clang++ ./configure --ninja $CONFIG_FLAGS && \
     make install DESTDIR=/out && \
-    mv /out/usr/local/bin/node /out/usr/local/bin/node.release && \
-    install out/Debug/node /out/usr/local/bin
+    bindir=/out/usr/local/bin && \
+    mkdir "${bindir}/.debug" && \
+    objcopy --compress-debug-sections --only-keep-debug "${bindir}/node" "${bindir}/.debug/node.debug" && \
+    objcopy --strip-unneeded --add-gnu-debuglink="${bindir}/.debug/node.debug" "${bindir}/node" && \
+    if [ -f out/Debug/node ]; then \
+    install out/Debug/node /out/usr/local/bin/node-debug && \
+    objcopy --compress-debug-sections --only-keep-debug "${bindir}/node-debug" "${bindir}/.debug/node-debug.debug" && \
+    objcopy --strip-unneeded --add-gnu-debuglink="${bindir}/.debug/node-debug.debug" "${bindir}/node-debug"; \
+    fi
 
 FROM docker.io/library/debian:12-slim
 RUN apt-get update && apt-get -y --no-install-recommends install libatomic1 llvm-14 && rm -rf /var/lib/apt/lists/*
