@@ -15,6 +15,10 @@ on:
           - asan-debug
           - debug
           - vanilla
+      tagSuffix:
+        description: Image tag suffix
+        required: false
+        default: -test
 
 permissions:
   contents: read
@@ -60,6 +64,6 @@ jobs:
             NODE_VERSION=${{ inputs.nodeVersion }}
             CONFIG_FLAGS=${{ steps.args.outputs.configFlags }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}-${{ inputs.imageType }}-test
+          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}-${{ inputs.imageType }}${{ inputs.tagSuffix }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
