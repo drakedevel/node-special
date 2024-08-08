@@ -29,7 +29,13 @@ RUN CC=clang CXX=clang++ CFLAGS=-ffile-prefix-map=../..="$(pwd)" CXXFLAGS=-ffile
     objcopy --strip-unneeded --add-gnu-debuglink="${bindir}/.debug/node-debug.debug" "${bindir}/node-debug"; \
     fi
 
-FROM docker.io/library/debian:12-slim
-RUN apt-get update && apt-get -y --no-install-recommends install libatomic1 llvm-14 && rm -rf /var/lib/apt/lists/*
-COPY --from=source /build /build
+FROM docker.io/library/debian:12-slim as base
+ARG CONFIG_FLAGS
+RUN pkgs="libatomic1" && \
+    if echo "$CONFIG_FLAGS" | grep -q enable-asan; then pkgs="$pkgs llvm-14"; fi && \
+    apt-get update && apt-get -y --no-install-recommends install $pkgs && \
+    rm -rf /var/lib/apt/lists/*
 COPY --from=build /out /
+
+FROM base as withsrc
+COPY --from=source /build /build
