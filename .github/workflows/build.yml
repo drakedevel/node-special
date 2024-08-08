@@ -46,10 +46,10 @@ jobs:
               config_flags='--enable-asan'
               ;;
             asan-debug)
-              config_flags='--debug --enable-asan'
+              config_flags='--debug --enable-asan --v8-with-dchecks'
               ;;
             debug)
-              config_flags='--debug'
+              config_flags='--debug --v8-with-dchecks'
               ;;
             vanilla)
               config_flags=''
