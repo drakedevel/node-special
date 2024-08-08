@@ -33,9 +33,7 @@ jobs:
       contents: read
       packages: write
     outputs:
-      base-image: ${{ steps.base-image.outputs.image }}
       base-digest: ${{ steps.base-image.outputs.digest }}
-      src-image: ${{ steps.src-image.outputs.image }}
       src-digest: ${{ steps.src-image.outputs.digest }}
     steps:
       - name: Compute build args
@@ -98,7 +96,7 @@ jobs:
     if: ${{ inputs.slsaProvenance }}
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: ${{ needs.build.outputs.base-image }}
+      image: ghcr.io/${{ github.repository_owner }}/node-special
       digest: ${{ needs.build.outputs.base-digest }}
       registry-username: ${{ github.repository_owner }}
     secrets:
@@ -113,7 +111,7 @@ jobs:
     if: ${{ inputs.slsaProvenance }}
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: ${{ needs.build.outputs.src-image }}
+      image: ghcr.io/${{ github.repository_owner }}/node-special
       digest: ${{ needs.build.outputs.src-digest }}
       registry-username: ${{ github.repository_owner }}
     secrets:
