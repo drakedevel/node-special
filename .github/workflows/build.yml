@@ -86,15 +86,29 @@ jobs:
           target: withsrc
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+  provenance:
+    needs: [build]
+    runs-on: ubuntu-22.04
+    permissions:
+      attestations: write
+      id-token: write
+      packages: write
+    if: inputs.slsaProvenance
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/attest-build-provenance@v1
-        if: inputs.slsaProvenance
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/node-special
-          subject-digest: ${{ steps.base-image.outputs.digest }}
+          subject-digest: ${{ needs.build.outputs.base-digest }}
           push-to-registry: true
       - uses: actions/attest-build-provenance@v1
-        if: inputs.slsaProvenance
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/node-special
-          subject-digest: ${{ steps.src-image.outputs.digest }}
+          subject-digest: ${{ needs.build.outputs.src-digest }}
           push-to-registry: true
