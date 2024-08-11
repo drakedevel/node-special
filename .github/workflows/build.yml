@@ -5,16 +5,12 @@ on:
       nodeVersion:
         description: Node.js version
         required: true
-      imageType:
-        description: Desired image type
-        required: true
-        default: vanilla
-        type: choice
-        options:
-          - asan
-          - asan-debug
-          - debug
-          - vanilla
+      asan:
+        description: Build with ASAN enabled
+        type: boolean
+      debug:
+        description: Build with debug enabled
+        type: boolean
       slsaProvenance:
         description: Generate SLSA provenance
         type: boolean
@@ -36,28 +32,10 @@ jobs:
       base-digest: ${{ steps.base-image.outputs.digest }}
       src-digest: ${{ steps.src-image.outputs.digest }}
     steps:
+      - uses: actions/checkout@v4
       - name: Compute build args
         id: args
-        run: |
-          case ${{ inputs.imageType }} in
-            asan)
-              config_flags='--enable-asan'
-              ;;
-            asan-debug)
-              config_flags='--debug --enable-asan --v8-with-dchecks'
-              ;;
-            debug)
-              config_flags='--debug --v8-with-dchecks'
-              ;;
-            vanilla)
-              config_flags=''
-              ;;
-            *)
-              echo "Unknown image type ${{ inputs.imageType }}" >&2
-              exit 1
-              ;;
-          esac
-          echo "configFlags=${config_flags}" >> "$GITHUB_OUTPUT"
+        run: ./build_args.sh ${{ inputs.asan }} ${{ inputs.debug }}
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -70,8 +48,9 @@ jobs:
           build-args: |
             NODE_VERSION=${{ inputs.nodeVersion }}
             CONFIG_FLAGS=${{ steps.args.outputs.configFlags }}
+          context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}-${{ inputs.imageType }}${{ inputs.tagSuffix }}
+          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}${{ steps.args.outputs.tagSuffix }}${{ inputs.tagSuffix }}
           target: base
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -81,8 +60,9 @@ jobs:
           build-args: |
             NODE_VERSION=${{ inputs.nodeVersion }}
             CONFIG_FLAGS=${{ steps.args.outputs.configFlags }}
+          context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}-${{ inputs.imageType }}${{ inputs.tagSuffix }}-src
+          tags: ghcr.io/${{ github.repository_owner }}/node-special:${{ inputs.nodeVersion }}${{ steps.args.outputs.tagSuffix }}${{ inputs.tagSuffix }}-src
           target: withsrc
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
