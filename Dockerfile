@@ -1,12 +1,14 @@
 FROM docker.io/library/debian:12-slim as source
 ARG NODE_VERSION
-RUN apt-get update && apt-get -y install \
-    build-essential \
-    clang \
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    clang-16 \
     curl \
+    libclang-rt-16-dev \
+    make \
     ninja-build \
     python3 \
     python3-pip \
+    xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
@@ -16,7 +18,7 @@ RUN curl -fsSL -o /tmp/node.tar.xz "https://nodejs.org/download/release/v${NODE_
 
 FROM source as build
 ARG CONFIG_FLAGS
-RUN CC=clang CXX=clang++ CFLAGS=-ffile-prefix-map=../..="$(pwd)" CXXFLAGS=-ffile-prefix-map=../..="$(pwd)" \
+RUN CC=clang-16 CXX=clang++-16 CFLAGS=-ffile-prefix-map=../..="$(pwd)" CXXFLAGS=-ffile-prefix-map=../..="$(pwd)" \
     ./configure --ninja $CONFIG_FLAGS && \
     make install DESTDIR=/out && \
     bindir=/out/usr/local/bin && \
@@ -32,7 +34,7 @@ RUN CC=clang CXX=clang++ CFLAGS=-ffile-prefix-map=../..="$(pwd)" CXXFLAGS=-ffile
 FROM docker.io/library/debian:12-slim as base
 ARG CONFIG_FLAGS
 RUN pkgs="libatomic1" && \
-    if echo "$CONFIG_FLAGS" | grep -q enable-asan; then pkgs="$pkgs llvm-14"; fi && \
+    if echo "$CONFIG_FLAGS" | grep -E -q 'enable-(a|ub)san'; then pkgs="$pkgs llvm-16"; fi && \
     apt-get update && apt-get -y --no-install-recommends install $pkgs && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=build /out /
