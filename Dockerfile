@@ -8,6 +8,7 @@ RUN apt-get update && apt-get -y --no-install-recommends install ca-certificates
     echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] http://apt.llvm.org/bookworm/ llvm-toolchain-bookworm-${LLVM_VERSION} main" >> /etc/apt/sources.list && \
     apt-get update && apt-get -y --no-install-recommends install \
     "clang-${LLVM_VERSION}" \
+    "libclang-rt-${LLVM_VERSION}-dev" \
     make \
     ninja-build \
     python3 \
