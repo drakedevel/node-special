@@ -18,7 +18,7 @@ RUN curl -fsSL -o /tmp/node.tar.xz "https://nodejs.org/download/release/v${NODE_
 
 FROM source as build
 ARG CONFIG_FLAGS
-RUN CC=clang-16 CXX=clang++-16 CFLAGS=-ffile-prefix-map=../..="$(pwd)" CXXFLAGS=-ffile-prefix-map=../..="$(pwd)" \
+RUN CC=clang-16 CXX=clang++-16 CFLAGS="-ffile-prefix-map=../..=$(pwd) -gz" CXXFLAGS="-ffile-prefix-map=../..=$(pwd) -gz" LDFLAGS=-gz \
     ./configure --ninja $CONFIG_FLAGS && \
     make install DESTDIR=/out && \
     bindir=/out/usr/local/bin && \
